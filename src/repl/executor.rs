@@ -74,6 +74,13 @@ impl ReplExecutor {
         Ok(())
     }
 
+    /// Return known exported function names for REPL completion.
+    pub fn function_names(&self) -> Vec<String> {
+        let mut names: Vec<String> = self.signatures.keys().cloned().collect();
+        names.sort();
+        names
+    }
+
     fn args_to_json_array_for(&mut self, function: &str, args: &[String]) -> Result<String> {
         let values = if let Some(sig) = self.signatures.get(function).cloned() {
             self.typed_repl_args(&sig, args)?
