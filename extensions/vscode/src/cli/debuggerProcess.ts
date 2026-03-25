@@ -98,7 +98,8 @@ type DebugRequest =
   | { type: 'Ping' }
   | { type: 'Disconnect' }
   | { type: 'LoadSnapshot'; snapshot_path: string }
-  | { type: 'GetCapabilities' };
+  | { type: 'GetCapabilities' }
+  | { type: 'Unknown' };
 
 type DebugResponse =
   | { type: 'HandshakeAck'; server_name: string; server_version: string; protocol_min: number; protocol_max: number; selected_version: number }
@@ -134,6 +135,7 @@ type DebugResponse =
     }
   | { type: 'Pong' }
   | { type: 'Disconnected' }
+  | { type: 'Unknown' }
   | { type: 'Error'; message: string };
 
 type DebugMessage = {
@@ -604,7 +606,8 @@ export class DebuggerProcess {
       let message: DebugMessage;
       try {
         message = JSON.parse(line) as DebugMessage;
-      } catch {
+      } catch (err) {
+        this.logManager?.log(LogLevel.Error, LogPhase.Connect, `Failed to parse backend message: ${err}\nLine: ${line}`);
         continue;
       }
       const pending = this.pendingRequests.get(message.id);

@@ -439,7 +439,7 @@ impl RemoteClient {
 }
 
 fn parse_response_line(expected_id: u64, response_line: &str) -> Result<DebugResponse> {
-    let response_message: DebugMessage = serde_json::from_str(response_line)
+    let response_message = DebugMessage::parse(response_line)
         .map_err(|e| DebuggerError::FileError(format!("Failed to parse response: {}", e)))?;
 
     if response_message.id != expected_id {
@@ -450,9 +450,18 @@ fn parse_response_line(expected_id: u64, response_line: &str) -> Result<DebugRes
         .into());
     }
 
-    response_message.response.ok_or_else(|| {
-        DebuggerError::FileError("Response message has no response field".to_string()).into()
-    })
+    let response = response_message.response.ok_or_else(|| {
+        DebuggerError::FileError("Response message has no response field".to_string())
+    })?;
+
+    if matches!(response, DebugResponse::Unknown) {
+        return Err(DebuggerError::ExecutionError(
+            "Received unknown response type from server. Try upgrading the client.".to_string(),
+        )
+        .into());
+    }
+
+    Ok(response)
 }
 
 fn sanitize_auth_message(message: &str, token: &str) -> String {

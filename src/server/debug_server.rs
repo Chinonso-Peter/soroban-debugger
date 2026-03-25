@@ -111,10 +111,18 @@ impl DebugServer {
                 break;
             }
 
-            let message: DebugMessage = match serde_json::from_str(line.trim_end()) {
+            let message = match DebugMessage::parse(line.trim_end()) {
                 Ok(msg) => msg,
                 Err(e) => {
                     warn!("Failed to parse request: {}", e);
+                    let response = DebugMessage::response(
+                        0, // ID might be unknown if parse failed, but often it's available. 
+                           // For now use 0 or try to extract it if possible.
+                        DebugResponse::Error {
+                            message: format!("Malformed request: {}", e),
+                        },
+                    );
+                    let _ = send_response(&mut writer, response).await;
                     continue;
                 }
             };
@@ -122,6 +130,18 @@ impl DebugServer {
                 warn!("Received message without request");
                 continue;
             };
+
+            if matches!(request, DebugRequest::Unknown) {
+                let response = DebugMessage::response(
+                    message.id,
+                    DebugResponse::Error {
+                        message: "Unknown request type. Try upgrading the server.".to_string(),
+                    },
+                );
+                send_response(&mut writer, response).await?;
+                continue;
+            }
+
             info!("Received request: {}", summarize_request(&request));
 
             if matches!(request, DebugRequest::Ping) {
