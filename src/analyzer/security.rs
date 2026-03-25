@@ -344,7 +344,6 @@ impl SecurityRule for ReentrancyPatternRule {
     ) -> Result<Vec<SecurityFinding>> {
         Ok(analyze_reentrancy_pattern_dynamic(trace))
     }
-    Vec::new()
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -726,17 +725,18 @@ fn is_storage_read_import(module: &str, name: &str) -> bool {
             return true;
         }
         if let Some(suffix) = n.strip_prefix(base) {
-        // Handle prefix-qualified names like "contract_storage_get" or "soroban_storage_has"
-        if n.ends_with(base) {
-            return true;
-        }
-        if n.starts_with(base) {
-            let suffix = &n[base.len()..];
+            if suffix.is_empty() {
+                return true;
+            }
             if let Some(rest) = suffix.strip_prefix('v') {
                 if !rest.is_empty() && rest.chars().all(|c| c.is_ascii_digit()) {
                     return true;
                 }
             }
+        }
+        // Handle prefix-qualified names like "contract_storage_get".
+        if n.ends_with(base) {
+            return true;
         }
     }
 
