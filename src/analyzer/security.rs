@@ -366,6 +366,7 @@ impl SecurityRule for AuthorizationCheckRule {
                         rationale: Some("Found storage writes occurring outside authorized scope or for mismatched actors within the call frame.".to_string()),
                     });
                 }
+            }
         }
         Ok(findings)
     }
